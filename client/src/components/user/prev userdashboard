@@ -1,0 +1,307 @@
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Star, MapPin, Clock, DollarSign, Calendar, Heart, Users, Award } from 'lucide-react';
+import './Dashboard.css'; // Import the custom CSS file
+
+const Dashboard = ({ user }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('');
+  const [priceRange, setPriceRange] = useState('');
+  const [trainers, setTrainers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Mock trainers data
+  useEffect(() => {
+    setTimeout(() => {
+      setTrainers([
+        {
+          id: 1,
+          name: "Mike Johnson",
+          specialties: ["Weight Training", "Bodybuilding"],
+          rating: 4.9,
+          reviews: 127,
+          hourlyRate: 75,
+          location: "Downtown Gym",
+          experience: 8,
+          image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop&crop=face",
+          bio: "Certified bodybuilding coach with 8+ years of experience helping clients achieve their fitness goals.",
+          availability: "Mon-Fri"
+        },
+        {
+          id: 2,
+          name: "Sarah Williams",
+          specialties: ["Yoga", "Pilates", "Flexibility"],
+          rating: 4.8,
+          reviews: 89,
+          hourlyRate: 60,
+          location: "Wellness Center",
+          experience: 5,
+          image: "https://images.unsplash.com/photo-1594736797933-d0f1dcb14d8f?w=400&h=400&fit=crop&crop=face",
+          bio: "Yoga instructor specializing in mindfulness and flexibility training for all levels.",
+          availability: "Daily"
+        },
+        {
+          id: 3,
+          name: "David Chen",
+          specialties: ["CrossFit", "HIIT", "Strength"],
+          rating: 4.7,
+          reviews: 156,
+          hourlyRate: 80,
+          location: "CrossFit Box",
+          experience: 6,
+          image: "https://images.unsplash.com/photo-1567013127542-490d757e51cd?w=400&h=400&fit=crop&crop=face",
+          bio: "High-intensity training specialist focused on functional fitness and athletic performance.",
+          availability: "Mon-Sat"
+        },
+        {
+          id: 4,
+          name: "Emma Rodriguez",
+          specialties: ["Cardio", "Weight Loss", "Nutrition"],
+          rating: 4.9,
+          reviews: 203,
+          hourlyRate: 70,
+          location: "Fitness Hub",
+          experience: 7,
+          image: "https://images.unsplash.com/photo-1559539708-f3792e71aa4b?w=400&h=400&fit=crop&crop=face",
+          bio: "Nutrition and fitness coach helping clients achieve sustainable weight loss and healthy lifestyle.",
+          availability: "Mon-Fri"
+        },
+        {
+          id: 5,
+          name: "Alex Thompson",
+          specialties: ["Powerlifting", "Strength", "Competition Prep"],
+          rating: 4.8,
+          reviews: 94,
+          hourlyRate: 85,
+          location: "Iron Gym",
+          experience: 10,
+          image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&h=400&fit=crop&crop=face",
+          bio: "Powerlifting champion and coach specializing in strength training and competition preparation.",
+          availability: "Tue-Sun"
+        },
+        {
+          id: 6,
+          name: "Lisa Park",
+          specialties: ["Dance Fitness", "Zumba", "Cardio"],
+          rating: 4.6,
+          reviews: 78,
+          hourlyRate: 55,
+          location: "Dance Studio",
+          experience: 4,
+          image: "https://images.unsplash.com/photo-1506629905607-47b5a87888a9?w=400&h=400&fit=crop&crop=face",
+          bio: "Dance fitness instructor bringing fun and energy to every workout session.",
+          availability: "Mon-Fri"
+        }
+      ]);
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  const specialties = ["Weight Training", "Yoga", "CrossFit", "Cardio", "Powerlifting", "Dance Fitness", "Pilates", "HIIT"];
+
+  const filteredTrainers = trainers.filter(trainer => {
+    const matchesSearch = trainer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         trainer.specialties.some(spec => spec.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSpecialty = !selectedSpecialty || trainer.specialties.includes(selectedSpecialty);
+    const matchesPrice = !priceRange || 
+      (priceRange === 'low' && trainer.hourlyRate < 60) ||
+      (priceRange === 'medium' && trainer.hourlyRate >= 60 && trainer.hourlyRate < 80) ||
+      (priceRange === 'high' && trainer.hourlyRate >= 80);
+    
+    return matchesSearch && matchesSpecialty && matchesPrice;
+  });
+
+  return (
+    <div className="dashboard-container">
+      {/* Hero Section */}
+      <div className="dashboard-hero">
+        <div className="dashboard-hero-content">
+          <h1>
+            Welcome back, <span className="highlight">{user?.name}!</span>
+          </h1>
+          <p>Find the perfect trainer to achieve your fitness goals</p>
+          
+          {/* Stats Cards */}
+          <div className="stats-grid">
+            <div className="stat-card">
+              <Users className="stat-icon" />
+              <div className="stat-number">{trainers.length}+</div>
+              <div className="stat-label">Expert Trainers</div>
+            </div>
+            <div className="stat-card">
+              <Award className="stat-icon green" />
+              <div className="stat-number">4.8</div>
+              <div className="stat-label">Average Rating</div>
+            </div>
+            <div className="stat-card">
+              <Clock className="stat-icon blue" />
+              <div className="stat-number">24/7</div>
+              <div className="stat-label">Available</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="search-filters">
+        <div className="filters-container">
+          <div className="filters-grid">
+            {/* Search */}
+            <div className="filter-group">
+              <Search className="filter-icon" />
+              <input
+                type="text"
+                placeholder="Search trainers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="filter-input"
+              />
+            </div>
+
+            {/* Specialty Filter */}
+            <div className="filter-group">
+              <Filter className="filter-icon" />
+              <select
+                value={selectedSpecialty}
+                onChange={(e) => setSelectedSpecialty(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">All Specialties</option>
+                {specialties.map(spec => (
+                  <option key={spec} value={spec}>{spec}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Price Range */}
+            <div className="filter-group">
+              <DollarSign className="filter-icon" />
+              <select
+                value={priceRange}
+                onChange={(e) => setPriceRange(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">All Prices</option>
+                <option value="low">Under $60/hr</option>
+                <option value="medium">$60-80/hr</option>
+                <option value="high">$80+/hr</option>
+              </select>
+            </div>
+
+            {/* Clear Filters */}
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedSpecialty('')
+                setPriceRange('');
+              }}
+              className="clear-filters-btn"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Trainers Grid */}
+      <div className="trainers-section">
+        <div className="trainers-header">
+          <h2>Available Trainers</h2>
+          <p>{filteredTrainers.length} trainers found</p>
+        </div>
+
+        {loading ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+          </div>
+        ) : (
+          <div className="trainers-grid">
+            {filteredTrainers.map(trainer => (
+              <div key={trainer.id} className="trainer-card">
+                {/* Trainer Image */}
+                <div className="trainer-image-container">
+                  <img 
+                    src={trainer.image} 
+                    alt={trainer.name}
+                    className="trainer-image"
+                  />
+                  <button className="trainer-favorite">
+                    <Heart />
+                  </button>
+                  <div className="trainer-rating-badge">
+                    <Star />
+                    {trainer.rating} ({trainer.reviews})
+                  </div>
+                </div>
+
+                {/* Trainer Info */}
+                <div className="trainer-info">
+                  <div className="trainer-header">
+                    <div>
+                      <h3 className="trainer-name">{trainer.name}</h3>
+                      <div className="trainer-location">
+                        <MapPin />
+                        {trainer.location}
+                      </div>
+                    </div>
+                    <div className="trainer-price">
+                      <div className="trainer-price-amount">${trainer.hourlyRate}</div>
+                      <div className="trainer-price-label">per hour</div>
+                    </div>
+                  </div>
+
+                  {/* Specialties */}
+                  <div className="trainer-specialties">
+                    {trainer.specialties.slice(0, 2).map(specialty => (
+                      <span key={specialty} className="specialty-tag">
+                        {specialty}
+                      </span>
+                    ))}
+                    {trainer.specialties.length > 2 && (
+                      <span className="specialty-tag specialty-more">
+                        +{trainer.specialties.length - 2} more
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="trainer-bio">{trainer.bio}</p>
+
+                  {/* Stats */}
+                  <div className="trainer-stats">
+                    <div className="trainer-stat">
+                      <Award />
+                      {trainer.experience} years
+                    </div>
+                    <div className="trainer-stat">
+                      <Clock />
+                      {trainer.availability}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="trainer-actions">
+                    <button className="btn-book">
+                      Book Session
+                    </button>
+                    <button className="btn-calendar">
+                      <Calendar />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {filteredTrainers.length === 0 && !loading && (
+          <div className="no-results">
+            <div className="no-results-emoji">😔</div>
+            <h3>No trainers found</h3>
+            <p>Try adjusting your search criteria</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

@@ -1,0 +1,27 @@
+I apologize for acting ahead. Here is exactly how to add data directly inside Supabase without using any code or scripts.
+
+Method 1: Using the Table Editor (Easiest, like Excel)
+Log in to your Supabase Dashboard.
+On the left sidebar, click on the Table Editor icon (it looks like a small grid/spreadsheet).
+To add a User:
+Click on the users table from the list.
+Click the green Insert > Insert Row button.
+A side panel will open. Fill in the fields (name, email, password, role).
+Note: For password, you cannot just type "password123" because the system expects it to be hashed. If you manually add it here, you won't be able to log in unless you manually paste a bcrypt hash. (This is why the script was useful, but if you want to test without login or just see data, this works).
+Click Save.
+To add a Trainer Profile:
+First, copy the id of the user you just created (you'll need it).
+Switch to the trainers table.
+Click Insert > Insert Row.
+Paste the User's ID into the userId field.
+Fill in the other trainer details (specialization, bio, etc.).
+Click Save.
+Method 2: Using the SQL Editor (Faster for copy-pasting)
+Click the SQL Editor icon on the left sidebar.
+Click New Query.
+Type standard SQL commands like this:
+sql
+INSERT INTO users (name, email, password, role)
+VALUES ('My New Guy', 'guy@test.com', 'hashed_password_string_here', 'trainer');
+Click Run.
+Important Note on Passwords: When you add users manually in Supabase, you have to provide a hashed password string, not plain text, or the login will fail. You can grab a valid hash from an existing user in your users table and just paste that same string for your new manual user. That way, they will share the same password.
