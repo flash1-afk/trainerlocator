@@ -139,7 +139,7 @@ export function HomePage() {
             + New Exercise
           </button>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {exercises.map(ex => (
             <button
               key={ex.id}
@@ -162,7 +162,7 @@ export function HomePage() {
 
       {/* Mode Buttons */}
       {selectedExercise && (
-        <section className="grid grid-cols-2 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             onClick={() => setMode('training')}
             className="glass p-6 text-left hover:border-brand-400 transition-all group"

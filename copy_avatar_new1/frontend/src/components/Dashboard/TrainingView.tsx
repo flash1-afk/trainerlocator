@@ -176,7 +176,7 @@ export function TrainingView() {
       </div>
 
       {/* Stats bar */}
-      <div className="grid grid-cols-3 gap-4 mt-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
         <div className="glass p-4 text-center">
           <div className="text-2xl font-bold text-brand-300">{store.trainingRepCount}</div>
           <div className="text-xs text-slate-400 mt-1">
@@ -198,7 +198,7 @@ export function TrainingView() {
       </div>
 
       {/* Controls */}
-      <div className="mt-4 flex gap-4 justify-center">
+      <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-center">
         {!store.isRecording ? (
           <button
             onClick={handleStartRecording}
