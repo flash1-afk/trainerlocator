@@ -17,7 +17,7 @@ const Login = ({ onLogin, switchToRegister }) => {
     setError('');
 
     try {
-      const response = await axios.post('/api/auth/login', formData);
+      const response = await axios.post('/auth/login', formData);
       const { token, user } = response.data;
       
       // Store token in localStorage
