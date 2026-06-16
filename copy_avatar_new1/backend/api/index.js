@@ -35,6 +35,7 @@ app.use('/api/', rateLimit({
 
 // Init DB before handling requests
 let dbInitialized = false;
+let dbError = null;
 app.use(async (req, res, next) => {
   if (!dbInitialized) {
     try {
@@ -42,10 +43,13 @@ app.use(async (req, res, next) => {
       dbInitialized = true;
     } catch (err) {
       console.error('DB init failed:', err);
+      dbError = err.message + '\n' + err.stack;
     }
   }
   next();
 });
+
+app.get('/api/debug', (req, res) => res.json({ error: dbError }));
 
 // Routes
 app.use('/api/exercises', exerciseRoutes);
