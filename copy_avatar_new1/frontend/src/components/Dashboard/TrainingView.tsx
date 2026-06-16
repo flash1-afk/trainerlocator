@@ -9,7 +9,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import type { JointAngles } from '@shared/types';
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const API = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000').replace(/\/+$/, '');
 
 export function TrainingView() {
   const store      = useAppStore();

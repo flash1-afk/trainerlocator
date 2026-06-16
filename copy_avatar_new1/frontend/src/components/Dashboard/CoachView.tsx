@@ -12,7 +12,7 @@ import type { Landmark, JointAngles } from '@shared/types';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const API = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000').replace(/\/+$/, '');
 
 type Phase = 'idle' | 'demo' | 'coaching';
 

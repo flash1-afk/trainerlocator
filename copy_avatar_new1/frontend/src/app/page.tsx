@@ -7,7 +7,7 @@ import { TrainingView } from '@/components/Dashboard/TrainingView';
 import { CoachView }    from '@/components/Dashboard/CoachView';
 import axios from 'axios';
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const API = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000').replace(/\/+$/, '');
 
 export default function Page() {
   const { mode, setExercises } = useAppStore();
