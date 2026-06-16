@@ -101,7 +101,7 @@ export function HomePage() {
   const { exercises, selectedExercise, setSelectedExercise, setMode, setExercises } = useAppStore();
   const [showModal, setShowModal] = useState(false);
 
-  const categories = [...new Set(exercises.map(e => e.category))];
+  const categories = Array.from(new Set(exercises.map(e => e.category)));
 
   const handleExerciseCreated = (ex: Exercise) => {
     setExercises([...exercises, ex]);
