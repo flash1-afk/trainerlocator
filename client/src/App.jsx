@@ -8,7 +8,7 @@ import TrainerLocator from './components/common/TrainerLocator';
 import AdminDashboard from './components/admin/AdminDashboard';
 
 // Set up axios defaults
-axios.defaults.baseURL = '/api';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || '/api';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
 // Floating Animation Component
