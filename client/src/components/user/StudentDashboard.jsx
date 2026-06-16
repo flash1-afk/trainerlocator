@@ -598,7 +598,11 @@ const StudentDashboard = ({ user }) => {
           <h2>Menu</h2>
         </div>
         <div className="sidebar-nav">
-          <button className="sidebar-btn" onClick={() => window.open(import.meta.env.VITE_AVATAR_URL || 'http://localhost:3000', '_blank')}>
+          <button className="sidebar-btn" onClick={() => {
+            let url = import.meta.env.VITE_AVATAR_URL || 'http://localhost:3000';
+            if (url && !url.startsWith('http')) url = 'https://' + url;
+            window.open(url, '_blank');
+          }}>
             <Bot size={22} className="sidebar-icon" />
             <span>Train via AI Avatar</span>
           </button>
