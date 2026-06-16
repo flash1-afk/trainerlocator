@@ -12,10 +12,20 @@ function getDb() {
 }
 
 async function initDb() {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  let dbPath = process.env.DB_PATH || path.join(__dirname, '../../data/avatar_buddy.db');
+  
+  // Try to create the directory
+  try {
+    const dir = path.dirname(dbPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (err) {
+    console.warn(`Failed to create directory for ${dbPath}, falling back to /tmp/avatar_buddy.db`);
+    dbPath = '/tmp/avatar_buddy.db';
+  }
 
-  db = new Database(DB_PATH);
+  db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 
