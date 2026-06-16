@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #0ea5e9;
+  --brand-dark: #0369a1;
+  --correct: #22c55e;
+  --warning: #eab308;
+  --error:   #ef4444;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0f;
+  color: #f1f5f9;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #1a1a2e; }
+::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 4px; }
+
+/* Feedback severity colors */
+.severity-correct { color: var(--correct); }
+.severity-warning { color: var(--warning); }
+.severity-error   { color: var(--error); }
+
+/* Joint dot colors */
+.joint-correct { background: var(--correct); box-shadow: 0 0 8px var(--correct); }
+.joint-warning { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+.joint-error   { background: var(--error);   box-shadow: 0 0 8px var(--error); }
+
+/* Score ring */
+@keyframes scoreRing {
+  from { stroke-dashoffset: 283; }
+  to   { stroke-dashoffset: var(--offset); }
+}
+.score-ring { animation: scoreRing 1s ease forwards; }
+
+/* Pulse dot for recording */
+@keyframes recordPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.4); }
+}
+.record-pulse { animation: recordPulse 1s ease-in-out infinite; }
+
+/* Webcam mirror */
+.webcam-mirror { transform: scaleX(-1); }
+
+/* Glass card */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(14, 165, 233, 0.15);
+  border-radius: 12px;
+}

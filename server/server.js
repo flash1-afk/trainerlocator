@@ -14,10 +14,17 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
+// Allowed origins for CORS (supports comma-separated CLIENT_URL for multiple frontends)
+const allowedOrigins = [
+  ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(u => u.trim()) : []),
+  'http://localhost:3003',
+  'http://localhost:3000'
+].filter(Boolean);
+
 // Socket.io setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: allowedOrigins,
     methods: ["GET", "POST"]
   }
 });
@@ -25,7 +32,7 @@ const io = new Server(server, {
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:3000",
+  origin: allowedOrigins,
   credentials: true
 }));
 

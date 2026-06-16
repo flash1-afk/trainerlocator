@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Search, Filter, Star, MapPin, Clock, DollarSign, Calendar, Heart, Users, Award, Map, X, Plus, Minus, CreditCard } from 'lucide-react';
+import { Search, Filter, Star, MapPin, Clock, DollarSign, Calendar, Heart, Users, Award, Map, X, Plus, Minus, CreditCard, Bot } from 'lucide-react';
 import './StudentDashboard.css'; // Import the custom CSS file
 
 const StudentDashboard = ({ user }) => {
@@ -592,8 +592,35 @@ const StudentDashboard = ({ user }) => {
   };
 
   return (
-    <div className="dashboard-container">
-      {/* Hero Section */}
+    <div className="dashboard-page-wrapper">
+      <div className="dashboard-sidebar">
+        <div className="sidebar-header">
+          <h2>Menu</h2>
+        </div>
+        <div className="sidebar-nav">
+          <button className="sidebar-btn" onClick={() => window.open('http://localhost:3000', '_blank')}>
+            <Bot size={22} className="sidebar-icon" />
+            <span>Train via AI Avatar</span>
+          </button>
+          <button className="sidebar-btn" onClick={() => {
+            if (!showMap) setShowMap(true);
+            setTimeout(() => {
+              document.querySelector('.map-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          }}>
+            <Map size={22} className="sidebar-icon" />
+            <span>Locate Trainer on Map</span>
+          </button>
+          <button className="sidebar-btn" onClick={() => {
+            document.querySelector('.trainers-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}>
+            <Users size={22} className="sidebar-icon" />
+            <span>See Trainers</span>
+          </button>
+        </div>
+      </div>
+      <div className="dashboard-container">
+        {/* Hero Section */}
       <div className="dashboard-hero">
         <div className="dashboard-hero-content">
           <h1>
@@ -1196,6 +1223,7 @@ const StudentDashboard = ({ user }) => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

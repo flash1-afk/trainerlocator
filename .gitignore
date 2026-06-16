@@ -30,3 +30,10 @@ npm-debug.log*
 
 # Debug
 *.pem
+
+# Avatar subproject
+copy_avatar_new1/ai-service/venv/
+copy_avatar_new1/backend/data/
+copy_avatar_new1/backend/node_modules/
+copy_avatar_new1/frontend/.next/
+copy_avatar_new1/frontend/node_modules/

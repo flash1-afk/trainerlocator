@@ -41,11 +41,11 @@ const Register = ({ onRegister, switchToLogin }) => {
       });
 
       const { token, user } = response.data;
-      
+
       // Store token in localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      
+
       // Call onRegister callback
       onRegister(user);
     } catch (err) {
@@ -66,7 +66,7 @@ const Register = ({ onRegister, switchToLogin }) => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxwYXR0ZXJuIGlkPSJncmlkIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMDUpIiBzdHJva2Utd2lkdGg9IjEiLz4KICAgIDwvcGF0dGVybj4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIgLz4KPC9zdmc+')] opacity-20"></div>
-      
+
       {/* Floating Elements */}
       <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-float"></div>
       <div className="absolute bottom-20 right-20 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-bounce-slow"></div>
@@ -100,12 +100,11 @@ const Register = ({ onRegister, switchToLogin }) => {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setFormData({...formData, role: 'user'})}
-                  className={`p-4 rounded-xl border transition-all duration-300 ${
-                    formData.role === 'user' 
-                      ? 'border-purple-500 bg-purple-500/20 text-purple-300' 
+                  onClick={() => setFormData({ ...formData, role: 'user' })}
+                  className={`p-4 rounded-xl border transition-all duration-300 ${formData.role === 'user'
+                      ? 'border-purple-500 bg-purple-500/20 text-purple-300'
                       : 'border-white/20 bg-white/5 text-gray-300 hover:bg-white/10'
-                  }`}
+                    }`}
                 >
                   <div className="text-2xl mb-2">👤</div>
                   <div className="font-semibold">User</div>
@@ -113,12 +112,11 @@ const Register = ({ onRegister, switchToLogin }) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFormData({...formData, role: 'trainer'})}
-                  className={`p-4 rounded-xl border transition-all duration-300 ${
-                    formData.role === 'trainer' 
-                      ? 'border-purple-500 bg-purple-500/20 text-purple-300' 
+                  onClick={() => setFormData({ ...formData, role: 'trainer' })}
+                  className={`p-4 rounded-xl border transition-all duration-300 ${formData.role === 'trainer'
+                      ? 'border-purple-500 bg-purple-500/20 text-purple-300'
                       : 'border-white/20 bg-white/5 text-gray-300 hover:bg-white/10'
-                  }`}
+                    }`}
                 >
                   <div className="text-2xl mb-2">💪</div>
                   <div className="font-semibold">Trainer</div>

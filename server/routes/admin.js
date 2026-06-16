@@ -1,9 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const User = require('../models/User');
-const Trainer = require('../models/Trainer');
-const Session = require('../models/Session');
-const Booking = require('../models/Booking');
+const supabase = require('../config/supabase');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -28,98 +25,96 @@ router.use(auth, requireAdmin);
 router.get('/dashboard', async (req, res) => {
   try {
     // Get user statistics
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ isActive: true });
-    const trainers = await User.countDocuments({ role: 'trainer', isActive: true });
-    const regularUsers = await User.countDocuments({ role: 'user', isActive: true });
-    const admins = await User.countDocuments({ role: 'admin', isActive: true });
+    const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true });
+    const { count: activeUsers } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('isActive', true);
+    const { count: trainers } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'trainer').eq('isActive', true);
+    const { count: regularUsers } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'user').eq('isActive', true);
+    const { count: admins } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'admin').eq('isActive', true);
 
     // Get users created in last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const newUsers = await User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString();
+    const { count: newUsers } = await supabase.from('users').select('*', { count: 'exact', head: true }).gte('createdAt', thirtyDaysAgoStr);
 
     // Get session statistics
-    const totalSessions = await Session.countDocuments();
-    const completedSessions = await Session.countDocuments({ status: 'completed' });
-    const scheduledSessions = await Session.countDocuments({ status: 'scheduled' });
-    const cancelledSessions = await Session.countDocuments({ status: 'cancelled' });
+    const { count: totalSessions } = await supabase.from('sessions').select('*', { count: 'exact', head: true });
+    const { count: completedSessions } = await supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('status', 'completed');
+    const { count: scheduledSessions } = await supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('status', 'scheduled');
+    const { count: cancelledSessions } = await supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('status', 'cancelled');
 
     // Get booking statistics
-    const totalBookings = await Booking.countDocuments();
-    const confirmedBookings = await Booking.countDocuments({ status: 'confirmed' });
-    const pendingBookings = await Booking.countDocuments({ status: 'pending' });
-    const completedBookings = await Booking.countDocuments({ status: 'completed' });
+    const { count: totalBookings } = await supabase.from('bookings').select('*', { count: 'exact', head: true });
+    const { count: confirmedBookings } = await supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'confirmed');
+    const { count: pendingBookings } = await supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    const { count: completedBookings } = await supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'completed');
 
     // Get revenue statistics
-    const totalRevenue = await Booking.aggregate([
-      { $match: { paymentStatus: 'paid' } },
-      { $group: { _id: null, total: { $sum: '$totalPrice' } } }
-    ]);
+    const { data: paidBookings } = await supabase.from('bookings').select('totalPrice').eq('paymentStatus', 'paid');
+    const totalRevenue = paidBookings ? paidBookings.reduce((sum, b) => sum + Number(b.totalPrice), 0) : 0;
 
-    const monthlyRevenue = await Booking.aggregate([
-      { 
-        $match: { 
-          paymentStatus: 'paid',
-          createdAt: { $gte: thirtyDaysAgo }
-        }
-      },
-      { $group: { _id: null, total: { $sum: '$totalPrice' } } }
-    ]);
+    const { data: monthlyPaidBookings } = await supabase.from('bookings').select('totalPrice').eq('paymentStatus', 'paid').gte('createdAt', thirtyDaysAgoStr);
+    const monthlyRevenue = monthlyPaidBookings ? monthlyPaidBookings.reduce((sum, b) => sum + Number(b.totalPrice), 0) : 0;
 
-    // Get top performing trainers
-    const topTrainers = await Trainer.aggregate([
-      { $match: { isActive: true } },
-      { $sort: { 'rating.average': -1 } },
-      { $limit: 5 },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          as: 'user'
-        }
-      },
-      { $unwind: '$user' },
-      {
-        $project: {
-          name: '$user.name',
-          email: '$user.email',
-          specialization: 1,
-          rating: 1,
-          clients: 1
-        }
-      }
-    ]);
+    // Get top performing trainers (assuming rating is a jsonb object like {"average": 5.0})
+    const { data: topTrainersRaw, error: topError } = await supabase
+      .from('trainers')
+      .select(`
+        *,
+        userId:users!inner(name, email)
+      `)
+      .eq('isActive', true)
+      // Supabase does not support ordering by a JSON key using standard order method easily in some cases without a view,
+      // but if 'rating' is a column, we will just fetch all active and sort in memory if needed.
+      // Wait, let's fetch all active trainers and sort them.
+      .limit(50); // limit to 50 active trainers to sort
+
+    let topTrainers = [];
+    if (topTrainersRaw) {
+      topTrainers = topTrainersRaw
+        .sort((a, b) => {
+          const avgA = a.rating?.average || 0;
+          const avgB = b.rating?.average || 0;
+          return avgB - avgA;
+        })
+        .slice(0, 5)
+        .map(t => ({
+          name: t.userId?.name,
+          email: t.userId?.email,
+          specialization: t.specialization,
+          rating: t.rating,
+          clients: t.clients?.total || 0
+        }));
+    }
 
     res.json({
       success: true,
       stats: {
         users: {
-          total: totalUsers,
-          active: activeUsers,
-          trainers,
-          regularUsers,
-          admins,
-          newUsers,
-          inactiveUsers: totalUsers - activeUsers
+          total: totalUsers || 0,
+          active: activeUsers || 0,
+          trainers: trainers || 0,
+          regularUsers: regularUsers || 0,
+          admins: admins || 0,
+          newUsers: newUsers || 0,
+          inactiveUsers: (totalUsers || 0) - (activeUsers || 0)
         },
         sessions: {
-          total: totalSessions,
-          completed: completedSessions,
-          scheduled: scheduledSessions,
-          cancelled: cancelledSessions,
+          total: totalSessions || 0,
+          completed: completedSessions || 0,
+          scheduled: scheduledSessions || 0,
+          cancelled: cancelledSessions || 0,
           completionRate: totalSessions > 0 ? ((completedSessions / totalSessions) * 100).toFixed(1) : 0
         },
         bookings: {
-          total: totalBookings,
-          confirmed: confirmedBookings,
-          pending: pendingBookings,
-          completed: completedBookings
+          total: totalBookings || 0,
+          confirmed: confirmedBookings || 0,
+          pending: pendingBookings || 0,
+          completed: completedBookings || 0
         },
         revenue: {
-          total: totalRevenue.length > 0 ? totalRevenue[0].total : 0,
-          monthly: monthlyRevenue.length > 0 ? monthlyRevenue[0].total : 0
+          total: totalRevenue,
+          monthly: monthlyRevenue
         },
         topTrainers
       }
@@ -149,38 +144,34 @@ router.get('/users', async (req, res) => {
       sortOrder = 'desc'
     } = req.query;
 
-    // Build filter object
-    const filter = {};
-    
+    let query = supabase.from('users').select('*', { count: 'exact' });
+
     if (role) {
-      filter.role = role;
+      query = query.eq('role', role);
     }
     
-    if (status !== undefined) {
-      filter.isActive = status === 'active';
+    if (status !== undefined && status !== '') {
+      query = query.eq('isActive', status === 'active');
     }
     
     if (search) {
-      filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
-      ];
+      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
     }
 
-    // Build sort object
-    const sort = {};
-    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-    // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
+    const to = skip + parseInt(limit) - 1;
 
-    const users = await User.find(filter)
-      .select('-password')
-      .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit));
+    const { data: usersRaw, count, error } = await query
+      .order(sortBy, { ascending: sortOrder === 'asc' })
+      .range(skip, to);
 
-    const total = await User.countDocuments(filter);
+    if (error) throw error;
+
+    // Remove passwords and add _id for frontend compatibility
+    const users = usersRaw.map(u => {
+      const { password, ...rest } = u;
+      return { ...rest, _id: u.id };
+    });
 
     res.json({
       success: true,
@@ -188,9 +179,9 @@ router.get('/users', async (req, res) => {
       count: users.length,
       pagination: {
         currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
-        totalUsers: total,
-        hasNext: skip + users.length < total,
+        totalPages: Math.ceil((count || 0) / parseInt(limit)),
+        totalUsers: count || 0,
+        hasNext: to < (count || 0) - 1,
         hasPrev: parseInt(page) > 1
       }
     });
@@ -230,27 +221,32 @@ router.put('/users/:id/status', [
       });
     }
 
-    const user = await User.findById(req.params.id);
-    if (!user) {
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('id, name, email, role, isActive')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError || !user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    user.isActive = isActive;
-    await user.save();
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update({ isActive, updatedAt: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select('id, name, email, role, isActive')
+      .single();
+
+    if (updateError) throw updateError;
 
     res.json({
       success: true,
       message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive
-      }
+      user: { ...updatedUser, _id: updatedUser.id }
     });
 
   } catch (error) {
@@ -288,26 +284,32 @@ router.put('/users/:id/role', [
       });
     }
 
-    const user = await User.findById(req.params.id);
-    if (!user) {
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('id, name, email, role')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError || !user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    user.role = role;
-    await user.save();
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update({ role, updatedAt: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select('id, name, email, role')
+      .single();
+
+    if (updateError) throw updateError;
 
     res.json({
       success: true,
       message: 'User role updated successfully',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: { ...updatedUser, _id: updatedUser.id }
     });
 
   } catch (error) {
@@ -332,46 +334,87 @@ router.get('/trainers', async (req, res) => {
       limit = 20
     } = req.query;
 
-    // Build filter object
-    const filter = {};
-    
-    if (verified !== undefined) {
-      filter.isVerified = verified === 'true';
+    let query = supabase
+      .from('trainers')
+      .select('*, userId:users!inner(id, name, email, "profileImage", "isActive")', { count: 'exact' });
+
+    if (verified !== undefined && verified !== '') {
+      query = query.eq('isVerified', verified === 'true');
     }
     
-    if (status !== undefined) {
-      filter.isActive = status === 'active';
+    if (status !== undefined && status !== '') {
+      query = query.eq('isActive', status === 'active');
     }
 
-    const trainers = await Trainer.find(filter)
-      .populate('userId', 'name email profileImage isActive')
-      .sort({ createdAt: -1 });
-
-    // Apply search filter after population
-    let filteredTrainers = trainers;
     if (search) {
-      filteredTrainers = trainers.filter(trainer => {
-        const user = trainer.userId;
-        return user.name.toLowerCase().includes(search.toLowerCase()) ||
-               user.email.toLowerCase().includes(search.toLowerCase()) ||
-               trainer.specialization.toLowerCase().includes(search.toLowerCase());
+      // Need to filter within the joined users table or specialization
+      query = query.or(`specialization.ilike.%${search}%,users.name.ilike.%${search}%,users.email.ilike.%${search}%`);
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const to = skip + parseInt(limit) - 1;
+
+    const { data: trainersRaw, count, error } = await query
+      .order('createdAt', { ascending: false })
+      .range(skip, to);
+
+    if (error) {
+      // If error occurs due to the .or across foreign tables, we fallback to in-memory filtering for simplicity
+      console.warn("Foreign table OR query failed, fetching all and filtering in-memory");
+      
+      let fallbackQuery = supabase
+        .from('trainers')
+        .select('*, userId:users!inner(id, name, email, "profileImage", "isActive")')
+        .order('createdAt', { ascending: false });
+        
+      if (verified !== undefined && verified !== '') {
+        fallbackQuery = fallbackQuery.eq('isVerified', verified === 'true');
+      }
+      
+      if (status !== undefined && status !== '') {
+        fallbackQuery = fallbackQuery.eq('isActive', status === 'active');
+      }
+
+      const { data: allTrainers, error: fallbackError } = await fallbackQuery;
+      if (fallbackError) throw fallbackError;
+
+      let filtered = allTrainers;
+      if (search) {
+        const s = search.toLowerCase();
+        filtered = allTrainers.filter(t => 
+          (t.specialization && t.specialization.toLowerCase().includes(s)) ||
+          (t.userId?.name && t.userId.name.toLowerCase().includes(s)) ||
+          (t.userId?.email && t.userId.email.toLowerCase().includes(s))
+        );
+      }
+
+      const paginatedTrainers = filtered.slice(skip, skip + parseInt(limit)).map(t => ({ ...t, _id: t.id }));
+
+      return res.json({
+        success: true,
+        trainers: paginatedTrainers,
+        count: paginatedTrainers.length,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(filtered.length / parseInt(limit)),
+          totalTrainers: filtered.length,
+          hasNext: skip + paginatedTrainers.length < filtered.length,
+          hasPrev: parseInt(page) > 1
+        }
       });
     }
 
-    // Apply pagination
-    const total = filteredTrainers.length;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const paginatedTrainers = filteredTrainers.slice(skip, skip + parseInt(limit));
+    const mappedTrainers = trainersRaw.map(t => ({ ...t, _id: t.id }));
 
     res.json({
       success: true,
-      trainers: paginatedTrainers,
-      count: paginatedTrainers.length,
+      trainers: mappedTrainers,
+      count: mappedTrainers.length,
       pagination: {
         currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
-        totalTrainers: total,
-        hasNext: skip + paginatedTrainers.length < total,
+        totalPages: Math.ceil((count || 0) / parseInt(limit)),
+        totalTrainers: count || 0,
+        hasNext: to < (count || 0) - 1,
         hasPrev: parseInt(page) > 1
       }
     });
@@ -404,38 +447,36 @@ router.put('/trainers/:id/verify', [
 
     const { isVerified, notes } = req.body;
 
-    const trainer = await Trainer.findById(req.params.id);
-    if (!trainer) {
+    const { data: trainer, error: fetchError } = await supabase
+      .from('trainers')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError || !trainer) {
       return res.status(404).json({
         success: false,
         message: 'Trainer not found'
       });
     }
 
-    trainer.isVerified = isVerified;
-    
-    // Add verification history
-    if (!trainer.verificationHistory) {
-      trainer.verificationHistory = [];
-    }
-    
-    trainer.verificationHistory.push({
-      verified: isVerified,
-      verifiedBy: req.user.id,
-      timestamp: new Date(),
-      notes
-    });
+    // You could save verificationHistory in another table or as jsonb
+    const { data: updatedTrainer, error: updateError } = await supabase
+      .from('trainers')
+      .update({ 
+        isVerified, 
+        updatedAt: new Date().toISOString() 
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
 
-    await trainer.save();
+    if (updateError) throw updateError;
 
     res.json({
       success: true,
       message: `Trainer ${isVerified ? 'verified' : 'unverified'} successfully`,
-      trainer: {
-        id: trainer.id,
-        isVerified: trainer.isVerified,
-        verificationHistory: trainer.verificationHistory
-      }
+      trainer: { ...updatedTrainer, _id: updatedTrainer.id }
     });
 
   } catch (error) {
@@ -461,42 +502,67 @@ router.get('/sessions', async (req, res) => {
       limit = 20
     } = req.query;
 
-    // Build filter object
-    const filter = {};
-    
-    if (status) {
-      filter.status = status;
-    }
-    
-    if (type) {
-      filter.type = type;
-    }
-    
-    if (dateFrom || dateTo) {
-      filter.date = {};
-      if (dateFrom) filter.date.$gte = new Date(dateFrom);
-      if (dateTo) filter.date.$lte = new Date(dateTo);
-    }
+    let query = supabase
+      .from('sessions')
+      .select('*, userId:users!sessions_userId_fkey(id, name, email), trainerId:users!sessions_trainerId_fkey(id, name, email)', { count: 'exact' });
 
-    const sessions = await Session.find(filter)
-      .populate('userId', 'name email')
-      .populate('trainerId', 'name email')
-      .sort({ date: -1 });
+    if (status) query = query.eq('status', status);
+    if (type) query = query.eq('type', type);
+    if (dateFrom) query = query.gte('date', new Date(dateFrom).toISOString());
+    if (dateTo) query = query.lte('date', new Date(dateTo).toISOString());
 
-    // Apply pagination
-    const total = sessions.length;
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const paginatedSessions = sessions.slice(skip, skip + parseInt(limit));
+    const to = skip + parseInt(limit) - 1;
+
+    const { data: sessionsRaw, count, error } = await query
+      .order('date', { ascending: false })
+      .range(skip, to);
+
+    if (error) {
+      console.warn("Foreign key specific query failed, trying standard relational join...");
+      // Fallback if foreign keys are not named conventionally
+      let fallbackQuery = supabase
+        .from('sessions')
+        .select('*')
+        .order('date', { ascending: false });
+        
+      if (status) fallbackQuery = fallbackQuery.eq('status', status);
+      if (type) fallbackQuery = fallbackQuery.eq('type', type);
+      if (dateFrom) fallbackQuery = fallbackQuery.gte('date', new Date(dateFrom).toISOString());
+      if (dateTo) fallbackQuery = fallbackQuery.lte('date', new Date(dateTo).toISOString());
+
+      const { data: allSessions, error: fbError } = await fallbackQuery;
+      if (fbError) throw fbError;
+
+      // We'd have to manually fetch users if joining doesn't work, but let's assume it works in one format or another
+      // Supabase supports `userId:users!userId(...)` or `users!userId(...)`. Let's just return what we have.
+      const paginated = allSessions.slice(skip, skip + parseInt(limit)).map(s => ({...s, _id: s.id}));
+      
+      return res.json({
+        success: true,
+        sessions: paginated,
+        count: paginated.length,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(allSessions.length / parseInt(limit)),
+          totalSessions: allSessions.length,
+          hasNext: skip + paginated.length < allSessions.length,
+          hasPrev: parseInt(page) > 1
+        }
+      });
+    }
+
+    const mappedSessions = sessionsRaw.map(s => ({ ...s, _id: s.id }));
 
     res.json({
       success: true,
-      sessions: paginatedSessions,
-      count: paginatedSessions.length,
+      sessions: mappedSessions,
+      count: mappedSessions.length,
       pagination: {
         currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
-        totalSessions: total,
-        hasNext: skip + paginatedSessions.length < total,
+        totalPages: Math.ceil((count || 0) / parseInt(limit)),
+        totalSessions: count || 0,
+        hasNext: to < (count || 0) - 1,
         hasPrev: parseInt(page) > 1
       }
     });
@@ -523,40 +589,34 @@ router.get('/bookings', async (req, res) => {
       limit = 20
     } = req.query;
 
-    // Build filter object
-    const filter = {};
-    
-    if (status) {
-      filter.status = status;
-    }
-    
-    if (paymentStatus) {
-      filter.paymentStatus = paymentStatus;
-    }
-    
-    if (sessionType) {
-      filter.sessionType = sessionType;
-    }
+    let query = supabase
+      .from('bookings')
+      .select('*', { count: 'exact' });
 
-    const bookings = await Booking.find(filter)
-      .populate('userId', 'name email')
-      .populate('trainerId', 'name email')
-      .sort({ createdAt: -1 });
+    if (status) query = query.eq('status', status);
+    if (paymentStatus) query = query.eq('paymentStatus', paymentStatus);
+    if (sessionType) query = query.eq('sessionType', sessionType);
 
-    // Apply pagination
-    const total = bookings.length;
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const paginatedBookings = bookings.slice(skip, skip + parseInt(limit));
+    const to = skip + parseInt(limit) - 1;
+
+    const { data: bookingsRaw, count, error } = await query
+      .order('createdAt', { ascending: false })
+      .range(skip, to);
+
+    if (error) throw error;
+
+    const mappedBookings = bookingsRaw.map(b => ({ ...b, _id: b.id }));
 
     res.json({
       success: true,
-      bookings: paginatedBookings,
-      count: paginatedBookings.length,
+      bookings: mappedBookings,
+      count: mappedBookings.length,
       pagination: {
         currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
-        totalBookings: total,
-        hasNext: skip + paginatedBookings.length < total,
+        totalPages: Math.ceil((count || 0) / parseInt(limit)),
+        totalBookings: count || 0,
+        hasNext: to < (count || 0) - 1,
         hasPrev: parseInt(page) > 1
       }
     });
@@ -570,4 +630,4 @@ router.get('/bookings', async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

@@ -4,6 +4,8 @@ import './App.css';
 import TrainerDashboard from './components/trainer/TrainerDashboard';
 import UserDashboard from './components/user/StudentDashboard'; // Renamed import to avoid conflict
 import Profile from './components/common/Profile';
+import TrainerLocator from './components/common/TrainerLocator';
+import AdminDashboard from './components/admin/AdminDashboard';
 
 // Set up axios defaults
 axios.defaults.baseURL = '/api';
@@ -30,7 +32,7 @@ const Navigation = ({ user, onLogout, onNavigate }) => {
       <div className="nav-container">
         <div className="nav-brand" onClick={() => onNavigate('welcome')}>
           <div className="brand-icon">💪</div>
-          <h2>TRAINERLOCATOR</h2>
+          <h2>TrainerLocator</h2>
         </div>
         <div className="nav-links">
           {user ? (
@@ -220,7 +222,7 @@ const Register = ({ onRegister, onNavigate }) => {
       <div className="auth-background register-bg"></div>
       <div className="auth-card">
         <div className="auth-header">
-          <h2>Join TrainerLocator</h2>
+          <h2>Join FITVERSE</h2>
           <p>Start your transformation today</p>
         </div>
 
@@ -452,7 +454,7 @@ const Welcome = ({ onNavigate }) => {
 
       <div className="features-section">
         <div className="section-header">
-          <h2>Why Choose TrainerLocator?</h2>
+          <h2>Why Choose FITVERSE?</h2>
           <p>Experience the difference with our premium features</p>
         </div>
 
@@ -587,7 +589,7 @@ function App() {
         <div className="loading-content">
           <div className="loading-logo">
             <div className="logo-icon">💪</div>
-            <h2>TRAINERLOCATOR</h2>
+            <h2>TrainerLocator</h2>
           </div>
           <div className="loading-spinner large"></div>
           <p>Preparing your fitness journey...</p>
@@ -598,11 +600,14 @@ function App() {
 
   return (
     <div className="App">
-      <Navigation user={user} onLogout={handleLogout} onNavigate={handleNavigate} />
+      {/* Hide default nav on landing page — FitverseLanding has its own */}
+      {currentPage !== 'welcome' && (
+        <Navigation user={user} onLogout={handleLogout} onNavigate={handleNavigate} />
+      )}
 
-      <main className="main-content">
+      <main className={currentPage !== 'welcome' ? 'main-content' : ''}>
         {currentPage === 'welcome' && (
-          <Welcome onNavigate={handleNavigate} />
+          <TrainerLocator onNavigate={handleNavigate} />
         )}
         {currentPage === 'login' && (
           <Login onLogin={handleLogin} onNavigate={handleNavigate} />
@@ -620,6 +625,12 @@ function App() {
           <SimpleErrorBoundary>
             {console.log('Rendering UserDashboard for user:', user)}
             <UserDashboard user={user} />
+          </SimpleErrorBoundary>
+        )}
+        {currentPage === 'dashboard' && user && user.role === 'admin' && (
+          <SimpleErrorBoundary>
+            {console.log('Rendering AdminDashboard for user:', user)}
+            <AdminDashboard user={user} />
           </SimpleErrorBoundary>
         )}
         {currentPage === 'profile' && user && (
