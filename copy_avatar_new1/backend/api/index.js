@@ -14,10 +14,15 @@ const analyticsRoutes    = require('../src/routes/analytics');
 const app = express();
 
 // Allowed origins
-const allowedOrigins = [
-  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(u => u.trim()) : []),
-  'http://localhost:3000'
-].filter(Boolean);
+const allowedOrigins = (origin, callback) => {
+  if (!origin || origin.startsWith('http://localhost') || origin.endsWith('.vercel.app')) {
+    callback(null, true);
+  } else if (process.env.FRONTEND_URL && process.env.FRONTEND_URL.includes(origin)) {
+    callback(null, true);
+  } else {
+    callback(null, false);
+  }
+};
 
 // Middleware
 app.use(helmet({ contentSecurityPolicy: false }));
