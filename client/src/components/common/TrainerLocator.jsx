@@ -241,8 +241,8 @@ function HtmlContent({ onNavigate }) {
           </div>
 
           <h1 className="fitverse-hero-title">
-            <span className="line-1">YOUR FITNESS</span>
-            <span className="line-gradient">UNIVERSE</span>
+            <span className="line-1">THE ULTIMATE</span>
+            <span className="line-gradient">TRAINER LOCATOR</span>
           </h1>
 
           <p className="fitverse-hero-sub">

@@ -222,7 +222,7 @@ const Register = ({ onRegister, onNavigate }) => {
       <div className="auth-background register-bg"></div>
       <div className="auth-card">
         <div className="auth-header">
-          <h2>Join FITVERSE</h2>
+          <h2>Join TRAINERLOCATOR</h2>
           <p>Start your transformation today</p>
         </div>
 
@@ -454,7 +454,7 @@ const Welcome = ({ onNavigate }) => {
 
       <div className="features-section">
         <div className="section-header">
-          <h2>Why Choose FITVERSE?</h2>
+          <h2>Why Choose TRAINERLOCATOR?</h2>
           <p>Experience the difference with our premium features</p>
         </div>
 
