@@ -15,6 +15,7 @@ const app = express();
 // Allowed origins for CORS
 const allowedOrigins = [
   ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(u => u.trim()) : []),
+  'https://trainerlocator.vercel.app',
   'http://localhost:3003',
   'http://localhost:3000'
 ].filter(Boolean);
@@ -34,8 +35,8 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Routes
 app.use('/api/auth', require('../routes/auth'));

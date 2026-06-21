@@ -63,56 +63,55 @@ router.post('/register', upload.single('certificate'), [
         });
       }
 
-      console.log('🔍 Starting Strict OCR extraction on registration certificate...');
-      const worker = await Tesseract.createWorker('eng');
-      const { data: { text } } = await worker.recognize(req.file.buffer);
-      await worker.terminate();
+      // In production (Vercel), skip OCR because Tesseract times out on serverless (10s limit).
+      // On localhost, run full OCR verification.
+      const isProduction = process.env.NODE_ENV === 'production';
 
-      const cleanName = name.trim().toLowerCase();
-      const extractedText = text.toLowerCase();
-      
-      console.log('--- OCR EXTRACTED TEXT ---');
-      console.log(extractedText);
-      console.log('--------------------------');
-      
-      // Filter out small words for matching purposes
-      const nameParts = cleanName.split(/\s+/).filter(part => part.length > 2);
-      
-      // Normalized matching: remove all spaces and special characters
-      const normalizedExtracted = extractedText.replace(/[^a-z0-9]/g, '');
-      const normalizedName = cleanName.replace(/[^a-z0-9]/g, '');
-      
-      // Fallback for common OCR number/letter confusions (like 'o' vs '0', 'l' vs '1')
-      const superNormalizedExtracted = normalizedExtracted.replace(/[o]/g, '0').replace(/[l]/g, '1');
-      const superNormalizedName = normalizedName.replace(/[o]/g, '0').replace(/[l]/g, '1');
-      
-      // STRICT MATCHING: 
-      // 1. Exact full string matches
-      // 2. OR *every* significant part of their name is found
-      // 3. OR the normalized string (no spaces/punctuation) matches
-      // 4. OR the super normalized string (fixing o/0 and l/1) matches
-      const hasName = extractedText.includes(cleanName) || 
-                     (nameParts.length > 0 && nameParts.every(part => extractedText.includes(part))) ||
-                     normalizedExtracted.includes(normalizedName) ||
-                     superNormalizedExtracted.includes(superNormalizedName);
-                     
-      const hasKeyword = extractedText.includes('certificate') || 
-                        extractedText.includes('certified') || 
-                        extractedText.includes('trainer') || 
-                        extractedText.includes('completion');
+      if (!isProduction) {
+        // --- LOCAL ONLY: Full Tesseract OCR verification ---
+        console.log('🔍 Starting Strict OCR extraction on registration certificate...');
+        const worker = await Tesseract.createWorker('eng');
+        const { data: { text } } = await worker.recognize(req.file.buffer);
+        await worker.terminate();
 
-      if (!hasName || !hasKeyword) {
-        return res.status(400).json({
-          success: false,
-          message: 'Registration failed: We could not verify your certificate. Make sure your name is clearly visible and it is a valid personal training certificate.'
-        });
+        const cleanName = name.trim().toLowerCase();
+        const extractedText = text.toLowerCase();
+
+        console.log('--- OCR EXTRACTED TEXT ---');
+        console.log(extractedText);
+        console.log('--------------------------');
+
+        const nameParts = cleanName.split(/\s+/).filter(part => part.length > 2);
+        const normalizedExtracted = extractedText.replace(/[^a-z0-9]/g, '');
+        const normalizedName = cleanName.replace(/[^a-z0-9]/g, '');
+        const superNormalizedExtracted = normalizedExtracted.replace(/[o]/g, '0').replace(/[l]/g, '1');
+        const superNormalizedName = normalizedName.replace(/[o]/g, '0').replace(/[l]/g, '1');
+
+        const hasName = extractedText.includes(cleanName) ||
+                       (nameParts.length > 0 && nameParts.every(part => extractedText.includes(part))) ||
+                       normalizedExtracted.includes(normalizedName) ||
+                       superNormalizedExtracted.includes(superNormalizedName);
+
+        const hasKeyword = extractedText.includes('certificate') ||
+                          extractedText.includes('certified') ||
+                          extractedText.includes('trainer') ||
+                          extractedText.includes('completion');
+
+        if (!hasName || !hasKeyword) {
+          return res.status(400).json({
+            success: false,
+            message: 'Registration failed: We could not verify your certificate. Make sure your name is clearly visible and it is a valid personal training certificate.'
+          });
+        }
+        console.log('✅ Registration OCR Passed!');
+      } else {
+        // --- PRODUCTION (Vercel): Just verify it is a valid image file ---
+        console.log('✅ Production mode: OCR skipped, accepting certificate image directly.');
+        // File already validated as image/* by multer fileFilter above
       }
-
-      console.log('✅ Registration OCR Passed!');
 
       // Upload the certificate to Supabase
       const fileExt = path.extname(req.file.originalname);
-      // We don't have a user ID yet, so we use email hash or timestamp
       const fileName = `cert-new-${Date.now()}${fileExt}`;
       const filePath = `certificates/${fileName}`;
 
@@ -128,7 +127,7 @@ router.post('/register', upload.single('certificate'), [
       const { data: publicURLData } = supabase.storage
           .from('avatars')
           .getPublicUrl(filePath);
-          
+
       certificateUrl = publicURLData.publicUrl;
     }
 
