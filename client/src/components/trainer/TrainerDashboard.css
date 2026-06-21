@@ -1453,3 +1453,61 @@
   background: var(--bg-tertiary);
   border-radius: 12px;
 }
+
+/* Mobile responsive fixes */
+@media (max-width: 576px) {
+  .session-header,
+  .booking-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .session-client,
+  .booking-client {
+    width: 100%;
+  }
+
+  .session-status,
+  .booking-status {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 0.25rem;
+  }
+
+  .session-card,
+  .booking-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .client-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 0.9rem;
+  }
+
+  .tab-content {
+    padding: 1rem 0.75rem;
+    min-height: auto;
+  }
+
+  .trainer-dashboard {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .dashboard-header {
+    padding: 1.25rem 1rem;
+    border-radius: 12px;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .header-actions .btn {
+    width: 100%;
+  }
+}
