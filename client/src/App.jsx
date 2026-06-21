@@ -190,6 +190,7 @@ const Register = ({ onRegister, onNavigate }) => {
     password: '',
     role: 'user'
   });
+  const [certificateFile, setCertificateFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -199,7 +200,27 @@ const Register = ({ onRegister, onNavigate }) => {
     setError('');
 
     try {
-      const response = await axios.post('/auth/register', formData);
+      // Create FormData to send multipart/form-data
+      const submitData = new FormData();
+      submitData.append('name', formData.name);
+      submitData.append('email', formData.email);
+      submitData.append('password', formData.password);
+      submitData.append('role', formData.role);
+      
+      if (formData.role === 'trainer') {
+        if (!certificateFile) {
+          setError('Trainers must upload a valid professional certificate.');
+          setLoading(false);
+          return;
+        }
+        submitData.append('certificate', certificateFile);
+      }
+
+      const response = await axios.post('/auth/register', submitData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
 
       // Check if registration was successful
       if (response.data.success && response.data.token && response.data.user) {
@@ -274,6 +295,35 @@ const Register = ({ onRegister, onNavigate }) => {
             </select>
             <div className="input-highlight"></div>
           </div>
+
+          {/* [NEW] Strict Registration Certificate Upload */}
+          {formData.role === 'trainer' && (
+            <div className="form-group certificate-upload-group" style={{ padding: '1rem', backgroundColor: '#f3f4f6', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                <span style={{ color: '#000000' }}>Upload Certificate (Required)</span>
+              </label>
+              <p style={{ fontSize: '0.8rem', color: '#000000', marginBottom: '1rem' }}>
+                Our AI will instantly verify your certificate to approve your account.
+              </p>
+              <input
+                type="file"
+                id="registration-certificate"
+                accept="image/jpeg, image/png, image/jpg"
+                style={{ display: 'none' }}
+                onChange={(e) => setCertificateFile(e.target.files[0])}
+                required
+              />
+              <label 
+                htmlFor="registration-certificate" 
+                className={`btn ${certificateFile ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ width: '100%', display: 'flex', justifyContent: 'center', cursor: 'pointer', color: certificateFile ? '#fff' : '#1f2937', border: '1px solid #d1d5db', backgroundColor: certificateFile ? '' : '#f3f4f6' }}
+              >
+                <span style={{ color: certificateFile ? '#fff' : '#1f2937', fontWeight: 'bold' }}>
+                  {certificateFile ? `Selected: ${certificateFile.name}` : 'Choose File (.jpg, .png)'}
+                </span>
+              </label>
+            </div>
+          )}
 
           {error && <div className="error-message">{error}</div>}
 

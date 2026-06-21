@@ -174,9 +174,11 @@
 }
 
 .stat-label {
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.7) !important;
   font-size: 0.875rem;
   margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Search and Filters */

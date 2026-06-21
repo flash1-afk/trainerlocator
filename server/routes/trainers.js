@@ -22,6 +22,9 @@ router.get('/', async (req, res) => {
     const paginatedTrainers = rawPaginatedTrainers.map(t => ({
       ...t,
       _id: t.id,
+      name: t.userId?.name || 'Unknown Trainer',
+      email: t.userId?.email || '',
+      profileImage: t.userId?.profileImage || null,
       userId: t.userId ? { ...t.userId, _id: t.userId.id } : null
     }));
 

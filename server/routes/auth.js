@@ -3,14 +3,29 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const Trainer = require('../models/Trainer');
 const auth = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+const supabase = require('../config/supabase');
+const Tesseract = require('tesseract.js');
+
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new Error('Only image files are allowed!'), false);
+    }
+});
 
 const router = express.Router();
 
 // @route   POST /api/auth/register
-// @desc    Register a new user
+// @desc    Register a new user (with strict OCR check for trainers)
 // @access  Public
-router.post('/register', [
+router.post('/register', upload.single('certificate'), [
   body('name', 'Name is required').not().isEmpty(),
   body('email', 'Please include a valid email').isEmail(),
   body('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
@@ -37,6 +52,86 @@ router.post('/register', [
       });
     }
 
+    let certificateUrl = null;
+
+    // STRICT TRAINER CHECK: If they claim to be a trainer, they MUST have a valid certificate NOW
+    if (role === 'trainer') {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'Trainers must upload a valid professional certificate during registration.'
+        });
+      }
+
+      console.log('🔍 Starting Strict OCR extraction on registration certificate...');
+      const worker = await Tesseract.createWorker('eng');
+      const { data: { text } } = await worker.recognize(req.file.buffer);
+      await worker.terminate();
+
+      const cleanName = name.trim().toLowerCase();
+      const extractedText = text.toLowerCase();
+      
+      console.log('--- OCR EXTRACTED TEXT ---');
+      console.log(extractedText);
+      console.log('--------------------------');
+      
+      // Filter out small words for matching purposes
+      const nameParts = cleanName.split(/\s+/).filter(part => part.length > 2);
+      
+      // Normalized matching: remove all spaces and special characters
+      const normalizedExtracted = extractedText.replace(/[^a-z0-9]/g, '');
+      const normalizedName = cleanName.replace(/[^a-z0-9]/g, '');
+      
+      // Fallback for common OCR number/letter confusions (like 'o' vs '0', 'l' vs '1')
+      const superNormalizedExtracted = normalizedExtracted.replace(/[o]/g, '0').replace(/[l]/g, '1');
+      const superNormalizedName = normalizedName.replace(/[o]/g, '0').replace(/[l]/g, '1');
+      
+      // STRICT MATCHING: 
+      // 1. Exact full string matches
+      // 2. OR *every* significant part of their name is found
+      // 3. OR the normalized string (no spaces/punctuation) matches
+      // 4. OR the super normalized string (fixing o/0 and l/1) matches
+      const hasName = extractedText.includes(cleanName) || 
+                     (nameParts.length > 0 && nameParts.every(part => extractedText.includes(part))) ||
+                     normalizedExtracted.includes(normalizedName) ||
+                     superNormalizedExtracted.includes(superNormalizedName);
+                     
+      const hasKeyword = extractedText.includes('certificate') || 
+                        extractedText.includes('certified') || 
+                        extractedText.includes('trainer') || 
+                        extractedText.includes('completion');
+
+      if (!hasName || !hasKeyword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Registration failed: We could not verify your certificate. Make sure your name is clearly visible and it is a valid personal training certificate.'
+        });
+      }
+
+      console.log('✅ Registration OCR Passed!');
+
+      // Upload the certificate to Supabase
+      const fileExt = path.extname(req.file.originalname);
+      // We don't have a user ID yet, so we use email hash or timestamp
+      const fileName = `cert-new-${Date.now()}${fileExt}`;
+      const filePath = `certificates/${fileName}`;
+
+      const { data, error } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, req.file.buffer, {
+              contentType: req.file.mimetype,
+              upsert: true
+          });
+
+      if (error) throw error;
+
+      const { data: publicURLData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+      certificateUrl = publicURLData.publicUrl;
+    }
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -50,6 +145,28 @@ router.post('/register', [
     };
 
     user = await User.create(newUser);
+
+    // If they are a trainer, immediately create their Trainer profile as well!
+    if (role === 'trainer') {
+       await Trainer.create({
+         userId: user.id,
+         isVerified: true,
+         certificateUrl: certificateUrl,
+         specialization: 'Not Specified', // Default until they complete their profile
+         availability: {
+           monday: { available: false, start: '', end: '' },
+           tuesday: { available: false, start: '', end: '' },
+           wednesday: { available: false, start: '', end: '' },
+           thursday: { available: false, start: '', end: '' },
+           friday: { available: false, start: '', end: '' },
+           saturday: { available: false, start: '', end: '' },
+           sunday: { available: false, start: '', end: '' }
+         },
+         services: [],
+         location: { city: '', state: '' },
+         experience: { years: 0, description: '' }
+       });
+    }
 
     // Create JWT token
     const payload = {
@@ -86,7 +203,7 @@ router.post('/register', [
     console.error('Registration error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during registration'
+      message: 'Server error: ' + (error.message || 'Unknown error occurred')
     });
   }
 });

@@ -11,7 +11,6 @@ const TrainerDashboard = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [showProfileForm, setShowProfileForm] = useState(false);
-  const [uploadingCert, setUploadingCert] = useState(false); // [NEW] Track certificate upload loading state
   const [profileForm, setProfileForm] = useState({
     specialization: '',
     experience: { years: 0, description: '' },
@@ -163,52 +162,6 @@ const TrainerDashboard = ({ user }) => {
       // Show error message
       const errorMessage = error.response?.data?.message || 'Error saving profile. Please try again.';
       alert(errorMessage);
-    }
-  };
-
-  // [NEW] Function to handle certificate upload and send to OCR backend
-  const handleCertificateUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Check if it's an image or PDF
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file (JPG, PNG) for your certificate.');
-      return;
-    }
-
-    setUploadingCert(true);
-    
-    // Create form data to send file
-    const formData = new FormData();
-    formData.append('certificate', file);
-
-    try {
-      // Send to our new OCR backend route
-      const response = await axios.post('/upload/certificate', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      if (response.data.success) {
-        // Update local state with new verification status
-        setTrainerProfile(prev => ({
-          ...prev,
-          isVerified: response.data.isVerified,
-          certificateUrl: response.data.certificateUrl
-        }));
-        
-        // Alert the user with the success or failure message from the AI
-        alert(response.data.message);
-      }
-    } catch (error) {
-      console.error('Certificate upload error:', error);
-      alert(error.response?.data?.message || 'Failed to upload certificate. Please try again.');
-    } finally {
-      setUploadingCert(false);
-      // Reset the file input
-      e.target.value = null;
     }
   };
 
@@ -683,48 +636,6 @@ const TrainerDashboard = ({ user }) => {
                           {trainerProfile.isVerified ? 'Verified' : 'Pending'}
                         </span>
                       </div>
-                      
-                      {/* [NEW] Certificate Upload Section */}
-                      <div className="info-item certificate-upload-wrapper" style={{ gridColumn: '1 / -1', marginTop: '1rem', padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <span className="info-label" style={{ display: 'block', marginBottom: '0.5rem' }}>Professional Certificate</span>
-                            {trainerProfile.isVerified ? (
-                              <p style={{ color: '#10b981', fontSize: '0.9rem', margin: 0 }}>✓ Your certificate has been AI verified.</p>
-                            ) : (
-                              <p style={{ color: '#9ca3af', fontSize: '0.9rem', margin: 0 }}>Upload your certificate for instant AI verification.</p>
-                            )}
-                          </div>
-                          
-                          <div>
-                            <input
-                              type="file"
-                              id="certificate-upload"
-                              accept="image/jpeg, image/png, image/jpg"
-                              style={{ display: 'none' }}
-                              onChange={handleCertificateUpload}
-                              disabled={uploadingCert}
-                            />
-                            <label 
-                              htmlFor="certificate-upload" 
-                              className={`btn ${trainerProfile.isVerified ? 'btn-ghost' : 'btn-primary'}`}
-                              style={{ cursor: uploadingCert ? 'not-allowed' : 'pointer', display: 'inline-block' }}
-                            >
-                              <span>{uploadingCert ? 'Scanning...' : trainerProfile.isVerified ? 'Update Certificate' : 'Upload Certificate'}</span>
-                              <div className="btn-bg"></div>
-                            </label>
-                          </div>
-                        </div>
-                        {trainerProfile.certificateUrl && (
-                           <div style={{ marginTop: '1rem' }}>
-                             <a href={trainerProfile.certificateUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', fontSize: '0.9rem', textDecoration: 'none' }}>
-                               View Uploaded Certificate ↗
-                             </a>
-                           </div>
-                        )}
-                      </div>
-                      {/* End Certificate Upload Section */}
-
                     </div>
                   </div>
 
