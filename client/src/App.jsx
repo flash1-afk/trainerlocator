@@ -219,7 +219,11 @@ const Register = ({ onRegister, onNavigate }) => {
         submitData.append('certificate', certificateFile);
       }
 
-      const response = await axios.post('/auth/register', submitData);
+      const response = await axios.post('/auth/register', submitData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
 
       // Check if registration was successful
       if (response.data.success && response.data.token && response.data.user) {

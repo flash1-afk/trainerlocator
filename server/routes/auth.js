@@ -32,6 +32,11 @@ router.post('/register', upload.single('certificate'), [
   body('role', 'Role must be either user or trainer').isIn(['user', 'trainer'])
 ], async (req, res) => {
   try {
+    console.log('--- REGISTRATION REQUEST RECEIVED ---');
+    console.log('Headers:', req.headers);
+    console.log('Body fields:', req.body);
+    console.log('Uploaded File:', req.file);
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
