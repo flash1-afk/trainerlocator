@@ -69,3 +69,11 @@ app.use((req, res) => {
 });
 
 module.exports = app;
+
+// Disable Vercel's built-in body parser so multer can parse multipart/form-data requests
+module.exports.config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
