@@ -63,20 +63,37 @@ const Profile = ({ user, onUpdate, onBack }) => {
         uploadData.append('image', file);
 
         try {
-            const res = await axios.post('/upload', uploadData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            // Delete the default JSON Content-Type so axios sets multipart/form-data with boundary automatically
+            delete axios.defaults.headers.common['Content-Type'];
+            const res = await axios.post('/upload', uploadData);
             if (res.data.success) {
+                const newImageUrl = res.data.imageUrl;
+                // Immediately persist the new profile image to the user record
+                try {
+                    await axios.put(`/users/${user.id || user._id}`, { profileImage: newImageUrl });
+                    // Update localStorage so the nav avatar updates too
+                    const stored = JSON.parse(localStorage.getItem('user') || '{}');
+                    stored.profileImage = newImageUrl;
+                    localStorage.setItem('user', JSON.stringify(stored));
+                    // Update parent state (App.jsx user) so navbar re-renders
+                    if (onUpdate) onUpdate({ ...user, profileImage: newImageUrl });
+                } catch (saveErr) {
+                    console.warn('Could not persist image URL to user record:', saveErr);
+                }
                 setFormData(prev => {
                     const updated = { ...prev, profileImage: res.data.imageUrl };
                     checkChanges(updated);
                     return updated;
                 });
             }
+
         } catch (err) {
             console.error('File Upload Error:', err);
-            setError('Failed to upload image. Make sure "avatars" bucket exists in Supabase.');
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to upload image.';
+            setError(`Upload Error: ${errorMsg}`);
         } finally {
+            // Always restore default Content-Type
+            axios.defaults.headers.common['Content-Type'] = 'application/json';
             setUploading(false);
         }
     };
@@ -112,13 +129,21 @@ const Profile = ({ user, onUpdate, onBack }) => {
                 email: formData.email,
                 phone: formData.phone,
                 location: formData.location,
-                bio: formData.bio
+                bio: formData.bio,
+                profileImage: formData.profileImage // include updated profile picture
             };
             if (formData.password) userPayload.password = formData.password;
 
             const userRes = await axios.put(`/users/${user.id || user._id}`, userPayload);
 
             let updatedUser = userRes.data.user;
+            // Keep profileImage in updatedUser in case backend doesn't echo it back
+            if (!updatedUser.profileImage && formData.profileImage) {
+                updatedUser.profileImage = formData.profileImage;
+            }
+            // Sync to localStorage
+            const stored = JSON.parse(localStorage.getItem('user') || '{}');
+            localStorage.setItem('user', JSON.stringify({ ...stored, ...updatedUser }));
 
             // 2. If Trainer, Update Trainer Profile
             if (isTrainer) {

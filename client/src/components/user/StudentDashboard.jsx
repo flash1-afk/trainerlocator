@@ -358,8 +358,11 @@ const StudentDashboard = ({ user }) => {
     }
   };
 
-  const getTrainerImage = (trainerId, trainerName) => {
-    // Generate consistent images based on trainer ID
+  const getTrainerImage = (trainerId, trainerName, trainerProfileImage) => {
+    // Use the actual uploaded profile image if available
+    if (trainerProfileImage) return trainerProfileImage;
+
+    // Fallback to deterministic placeholder images
     const imageIds = [
       '1571019613454-1cb2f99b2d8b', // Male trainer 1
       '1594736797933-d0f1dcb14d8f', // Female trainer 1
@@ -865,7 +868,7 @@ const StudentDashboard = ({ user }) => {
                 {/* Trainer Image */}
                 <div className="trainer-image-container">
                   <img
-                    src={getTrainerImage(trainer._id, trainer.name)}
+                    src={getTrainerImage(trainer._id, trainer.name, trainer.profileImage)}
                     alt={trainer.name}
                     className="trainer-image"
                   />
@@ -981,7 +984,7 @@ const StudentDashboard = ({ user }) => {
 
             <div className="trainer-summary">
               <img
-                src={getTrainerImage(selectedTrainer._id, selectedTrainer.name)}
+                src={getTrainerImage(selectedTrainer._id, selectedTrainer.name, selectedTrainer.profileImage)}
                 alt={selectedTrainer.name}
                 className="trainer-modal-image"
               />

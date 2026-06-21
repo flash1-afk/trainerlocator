@@ -38,8 +38,11 @@ const Navigation = ({ user, onLogout, onNavigate }) => {
           {user ? (
             <>
               <div className="user-info" onClick={() => onNavigate('profile')} style={{ cursor: 'pointer' }}>
-                <div className="avatar">
-                  {user.name.charAt(0).toUpperCase()}
+                <div className="avatar" style={user.profileImage ? { padding: 0, overflow: 'hidden' } : {}}>
+                  {user.profileImage
+                    ? <img src={user.profileImage} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    : user.name.charAt(0).toUpperCase()
+                  }
                 </div>
                 <span>Welcome, {user.name}!</span>
               </div>
@@ -216,11 +219,7 @@ const Register = ({ onRegister, onNavigate }) => {
         submitData.append('certificate', certificateFile);
       }
 
-      const response = await axios.post('/auth/register', submitData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await axios.post('/auth/register', submitData);
 
       // Check if registration was successful
       if (response.data.success && response.data.token && response.data.user) {

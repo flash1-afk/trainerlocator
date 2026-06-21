@@ -1,2 +1,4 @@
 const axios = require('axios');
-console.log(axios.getUri({ baseURL: 'https://trainerlocator-api.vercel.app/api', url: '/api/auth/register' }));
+const client = axios.create({ baseURL: '/api' });
+console.log(client.getUri({ url: '/upload' }));
+console.log(client.getUri({ url: 'upload' }));

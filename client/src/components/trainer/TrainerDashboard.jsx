@@ -612,6 +612,21 @@ const TrainerDashboard = ({ user }) => {
                   </button>
                 </div>
 
+                {/* Profile Picture */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '1rem' }}>
+                  <div style={{ width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden', border: '3px solid rgba(139,92,246,0.6)', flexShrink: 0, background: 'rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: '#fff' }}>
+                    {user.profileImage
+                      ? <img src={user.profileImage} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : user.name?.charAt(0).toUpperCase()
+                    }
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: '700', fontSize: '1.2rem', color: '#fff' }}>{user.name}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>{user.email}</div>
+                    <div style={{ color: 'rgba(139,92,246,0.9)', fontSize: '0.85rem', marginTop: '0.25rem' }}>{trainerProfile?.specialization}</div>
+                  </div>
+                </div>
+
                 <div className="profile-info">
                   <div className="profile-section">
                     <h4>Basic Information</h4>
