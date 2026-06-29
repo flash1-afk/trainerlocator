@@ -130,8 +130,8 @@ const TrainerManagement = () => {
                       </div>
                     </td>
                     <td>{trainer.specialization}</td>
-                    <td>{trainer.experience} Years</td>
-                    <td>${trainer.pricePerHour}/hr</td>
+                    <td>{trainer.experience && typeof trainer.experience === 'object' ? trainer.experience.years : (trainer.experience || 0)} Years</td>
+                    <td>${(trainer.services && trainer.services.length > 0) ? trainer.services[0].price : 0}/hr</td>
                     <td>
                       <span className={`status-badge ${trainer.isVerified ? 'status-active' : 'status-pending'}`}>
                         {trainer.isVerified ? '✓ Verified' : '⚠ Pending'}
