@@ -93,7 +93,7 @@ router.put('/:id', auth, async (req, res) => {
     if (ownerId !== req.user.id) return res.status(403).json({ success: false, message: 'Not authorized' });
 
     // Allow updates to specific fields
-    const { specialization, services, availability, location, bio, certifications } = req.body;
+    const { specialization, services, availability, location, bio, certifications, experience } = req.body;
     const updateData = {};
     if (specialization) updateData.specialization = specialization;
     if (services) updateData.services = services; // Pricing/Fees inside services
@@ -101,6 +101,7 @@ router.put('/:id', auth, async (req, res) => {
     if (location) updateData.location = location;
     if (bio) updateData.bio = bio; // Note: Bio might be in Users table depending on implementation, but Trainer table has bio too in our flow
     if (certifications) updateData.certifications = certifications;
+    if (experience) updateData.experience = experience;
 
     const updatedTrainer = await Trainer.update(req.params.id, updateData);
     res.json({

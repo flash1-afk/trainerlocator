@@ -92,4 +92,46 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+router.put('/:id/status', auth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const booking = await Booking.findById(req.params.id);
+    
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    // verify authorization
+    const trainerUserId = booking.trainerId?.id || booking.trainerId?._id || booking.trainerId;
+    if (trainerUserId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const updatedBooking = await Booking.update(req.params.id, { status });
+
+    // Send Notification to student
+    try {
+      const studentId = booking.userId?.id || booking.userId?._id || booking.userId;
+      if (studentId) {
+        await Notification.create({
+          recipient: studentId,
+          sender: req.user.id,
+          type: 'booking_status',
+          title: `Booking ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+          message: `Your booking for a ${booking.sessionType} session has been ${status} by the trainer.`,
+          relatedId: booking.id,
+          relatedModel: 'bookings'
+        });
+      }
+    } catch (notifErr) {
+      console.error('Notification error on booking status:', notifErr);
+    }
+
+    res.json({ success: true, booking: { ...updatedBooking, _id: updatedBooking.id } });
+  } catch (error) {
+    console.error('Booking status update error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

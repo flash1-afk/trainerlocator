@@ -1140,7 +1140,7 @@
   cursor: pointer;
 }
 
-.day-name {
+.modal-content .day-name {
   font-size: 1.1rem;
   color: #ffffff !important;
   font-weight: 600;

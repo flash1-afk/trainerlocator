@@ -59,4 +59,26 @@ router.get('/stats/overview', auth, async (req, res) => {
   }
 });
 
+router.put('/:id/status', auth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const session = await Session.findById(req.params.id);
+    
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+
+    const trainerUserId = session.trainerId?.id || session.trainerId?._id || session.trainerId;
+    if (trainerUserId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const updatedSession = await Session.update(req.params.id, { status });
+    res.json({ success: true, session: { ...updatedSession, _id: updatedSession.id } });
+  } catch (error) {
+    console.error('Session status update error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

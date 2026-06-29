@@ -42,7 +42,29 @@ const TrainerDashboard = ({ user }) => {
         const profileResponse = await axios.get(`/trainers/user/${user.id}`);
         if (profileResponse.data && profileResponse.data.success && profileResponse.data.trainer) {
           setTrainerProfile(profileResponse.data.trainer);
-          setProfileForm(profileResponse.data.trainer);
+          
+          const defaultAvailability = {
+            monday: { start: '09:00', end: '17:00', available: false },
+            tuesday: { start: '09:00', end: '17:00', available: false },
+            wednesday: { start: '09:00', end: '17:00', available: false },
+            thursday: { start: '09:00', end: '17:00', available: false },
+            friday: { start: '09:00', end: '17:00', available: false },
+            saturday: { start: '09:00', end: '17:00', available: false },
+            sunday: { start: '09:00', end: '17:00', available: false }
+          };
+          const fetchedAvailability = profileResponse.data.trainer.availability || {};
+          const mergedAvailability = { ...defaultAvailability };
+          
+          for (const day in fetchedAvailability) {
+             if (mergedAvailability[day]) {
+                 mergedAvailability[day] = { ...mergedAvailability[day], ...fetchedAvailability[day] };
+             }
+          }
+
+          setProfileForm({
+            ...profileResponse.data.trainer,
+            availability: mergedAvailability
+          });
           profileExists = true;
         } else {
           // No profile exists yet, show the profile creation form
@@ -114,6 +136,36 @@ const TrainerDashboard = ({ user }) => {
     }
   };
 
+  const handleBookingStatus = async (bookingId, status) => {
+    try {
+      const response = await axios.put(`/bookings/${bookingId}/status`, { status });
+      if (response.data && response.data.success) {
+        setBookings(prev => prev.map(b => b._id === bookingId ? { ...b, status: status } : b));
+        alert(`Booking ${status} successfully!`);
+      }
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      alert('Failed to update booking status. Please try again.');
+    }
+  };
+
+  const handleSessionStatus = async (sessionId, status) => {
+    try {
+      const response = await axios.put(`/sessions/${sessionId}/status`, { status });
+      if (response.data && response.data.success) {
+        setSessions(prev => prev.map(s => s._id === sessionId ? { ...s, status: status } : s));
+        alert(`Session marked as ${status}!`);
+        // If completed, refresh stats
+        if (status === 'completed') {
+          fetchTrainerData(); 
+        }
+      }
+    } catch (error) {
+      console.error('Error updating session status:', error);
+      alert('Failed to update session status. Please try again.');
+    }
+  };
+
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
 
@@ -145,7 +197,8 @@ const TrainerDashboard = ({ user }) => {
 
       if (trainerProfile) {
         // Update existing profile
-        response = await axios.put(`/trainers/user/${user.id}`, profileForm);
+        const trainerId = trainerProfile.id || trainerProfile._id;
+        response = await axios.put(`/trainers/${trainerId}`, profileForm);
       } else {
         // Create new profile
         response = await axios.post('/trainers', profileForm);
@@ -364,19 +417,19 @@ const TrainerDashboard = ({ user }) => {
                   <div className="overview-card">
                     <h3>Quick Actions</h3>
                     <div className="quick-actions">
-                      <button className="action-btn">
+                      <button className="action-btn" onClick={() => setActiveTab('sessions')}>
                         <span>📅</span>
                         <span>View Schedule</span>
                       </button>
-                      <button className="action-btn">
+                      <button className="action-btn" onClick={() => setActiveTab('bookings')}>
                         <span>👥</span>
                         <span>Manage Clients</span>
                       </button>
-                      <button className="action-btn">
+                      <button className="action-btn" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                         <span>📊</span>
                         <span>View Analytics</span>
                       </button>
-                      <button className="action-btn">
+                      <button className="action-btn" onClick={() => setActiveTab('bookings')}>
                         <span>💰</span>
                         <span>Payment History</span>
                       </button>
@@ -440,18 +493,18 @@ const TrainerDashboard = ({ user }) => {
                       <div className="session-actions">
                         {session.status === 'scheduled' && (
                           <>
-                            <button className="btn btn-primary btn-small">
+                            <button className="btn btn-primary btn-small" onClick={() => handleSessionStatus(session._id, 'in-progress')}>
                               <span>Start Session</span>
                               <div className="btn-bg"></div>
                             </button>
-                            <button className="btn btn-ghost btn-small">
+                            <button className="btn btn-ghost btn-small" onClick={() => alert('Rescheduling feature coming soon!')}>
                               <span>Reschedule</span>
                               <div className="btn-bg"></div>
                             </button>
                           </>
                         )}
                         {session.status === 'in-progress' && (
-                          <button className="btn btn-success btn-small">
+                          <button className="btn btn-success btn-small" onClick={() => handleSessionStatus(session._id, 'completed')}>
                             <span>End Session</span>
                             <div className="btn-bg"></div>
                           </button>
@@ -519,18 +572,18 @@ const TrainerDashboard = ({ user }) => {
                       <div className="booking-actions">
                         {booking.status === 'pending' && (
                           <>
-                            <button className="btn btn-primary btn-small">
+                            <button className="btn btn-primary btn-small" onClick={() => handleBookingStatus(booking._id, 'confirmed')}>
                               <span>Confirm</span>
                               <div className="btn-bg"></div>
                             </button>
-                            <button className="btn btn-ghost btn-small">
+                            <button className="btn btn-ghost btn-small" onClick={() => handleBookingStatus(booking._id, 'declined')}>
                               <span>Decline</span>
                               <div className="btn-bg"></div>
                             </button>
                           </>
                         )}
                         {booking.status === 'confirmed' && (
-                          <button className="btn btn-success btn-small">
+                          <button className="btn btn-success btn-small" onClick={() => alert('View Details feature coming soon!')}>
                             <span>View Details</span>
                             <div className="btn-bg"></div>
                           </button>

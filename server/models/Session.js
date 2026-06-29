@@ -14,7 +14,7 @@ class Session {
   static async findById(id) {
     const { data, error } = await supabase
       .from('sessions')
-      .select('*, userId(name, email), trainerId(name, email)')
+      .select('*, userId(id, name, email), trainerId(id, name, email)')
       .eq('id', id)
       .single();
     if (error) {
@@ -25,7 +25,7 @@ class Session {
   }
 
   static async find(query = {}) {
-    let builder = supabase.from('sessions').select('*, userId(name), trainerId(name)');
+    let builder = supabase.from('sessions').select('*, userId(id, name), trainerId(id, name)');
 
     if (query.userId) builder = builder.eq('userId', query.userId);
     if (query.trainerId) builder = builder.eq('trainerId', query.trainerId);
