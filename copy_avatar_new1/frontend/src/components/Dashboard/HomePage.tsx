@@ -6,7 +6,8 @@ import type { Exercise } from '@shared/types';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API = (process.env.NEXT_PUBLIC_BACKEND_URL || 'https://avatar-backend-orcin.vercel.app').replace(/\/$/, '');
+const envUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+const API = (envUrl && envUrl.startsWith('http') ? envUrl : 'https://avatar-backend-orcin.vercel.app').replace(/\/$/, '');
 
 const CATEGORIES = ['strength','cardio','yoga','martial_arts','boxing','stretching','dance','custom'];
 const DIFFICULTIES = ['beginner','intermediate','advanced'];
