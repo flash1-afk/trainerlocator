@@ -1,0 +1,1 @@
+run = "cd copy_avatar_new1/backend && npm install && node src/index.js"
