@@ -22,7 +22,8 @@ const server = http.createServer(app);
 // Allowed origins (FRONTEND_URL can be comma-separated for multiple frontends)
 const allowedOrigins = [
   ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(u => u.trim()) : []),
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'https://avatar-exercise-tawny.vercel.app'
 ].filter(Boolean);
 
 // ─── Socket.IO ────────────────────────────────────────────────────────────────
