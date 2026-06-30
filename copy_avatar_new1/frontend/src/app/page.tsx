@@ -7,8 +7,7 @@ import { TrainingView } from '@/components/Dashboard/TrainingView';
 import { CoachView }    from '@/components/Dashboard/CoachView';
 import axios from 'axios';
 
-const envUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-const API = (envUrl && envUrl.startsWith('http') ? envUrl : 'https://avatar-backend-orcin.vercel.app').replace(/\/$/, '');
+const API = process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : 'https://avatar-backend-orcin.vercel.app';
 
 export default function Page() {
   const { mode, setExercises } = useAppStore();

@@ -9,8 +9,7 @@ import type { PoseFrame, CoachFeedback, RepResult } from '@shared/types';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const envUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-const BACKEND_URL = (envUrl && envUrl.startsWith('http') ? envUrl : 'https://avatar-backend-orcin.vercel.app').replace(/\/$/, '');
+const BACKEND_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : 'https://avatar-backend-orcin.vercel.app';
 
 export function useSocket() {
   const socketRef = useRef<Socket | null>(null);

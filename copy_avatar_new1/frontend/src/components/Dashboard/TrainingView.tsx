@@ -9,8 +9,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import type { JointAngles } from '@shared/types';
 
-const envUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-const API = (envUrl && envUrl.startsWith('http') ? envUrl : 'https://avatar-backend-orcin.vercel.app').replace(/\/$/, '');
+const API = process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : 'https://avatar-backend-orcin.vercel.app';
 
 export function TrainingView() {
   const store      = useAppStore();

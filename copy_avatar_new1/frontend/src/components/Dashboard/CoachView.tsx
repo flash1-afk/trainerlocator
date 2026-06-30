@@ -12,8 +12,7 @@ import type { Landmark, JointAngles } from '@shared/types';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const envUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-const API = (envUrl && envUrl.startsWith('http') ? envUrl : 'https://avatar-backend-orcin.vercel.app').replace(/\/$/, '');
+const API = process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : 'https://avatar-backend-orcin.vercel.app';
 
 type Phase = 'idle' | 'demo' | 'coaching';
 
