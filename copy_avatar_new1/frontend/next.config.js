@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://avatar-backend-orcin.vercel.app';
     return [
       {
         source: '/api/:path*',
