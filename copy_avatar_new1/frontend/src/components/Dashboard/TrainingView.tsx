@@ -9,7 +9,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import type { JointAngles } from '@shared/types';
 
-const API = '';
+const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://avatar-backend-orcin.vercel.app';
 
 export function TrainingView() {
   const store      = useAppStore();
