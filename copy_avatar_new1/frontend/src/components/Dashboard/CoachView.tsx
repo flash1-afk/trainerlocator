@@ -12,7 +12,7 @@ import type { Landmark, JointAngles } from '@shared/types';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API = process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : 'https://avatar-backend-orcin.vercel.app';
+const API = process.env.NODE_ENV === 'development' ? 'http://localhost:4000' : 'https://206f7aad-5914-4f94-952f-7ca67651ffda-00-cg7idyc9hp6e.sisko.replit.dev';
 
 type Phase = 'idle' | 'demo' | 'coaching';
 
